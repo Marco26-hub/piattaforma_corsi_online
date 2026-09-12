@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+}
+
+enum Level {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum LessonType {
+  VIDEO
+  TEXT
+}
+
+model User {
+  id           String       @id @default(cuid())
+  name         String?
+  email        String       @unique
+  passwordHash String
+  role         Role         @default(CUSTOMER)
+  image        String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  enrollments  Enrollment[]
+  progress     Progress[]
+
+  @@map("users")
+}
+
+model Course {
+  id          String       @id @default(cuid())
+  slug        String       @unique
+  title       String
+  subtitle    String?
+  description String
+  imageUrl    String?
+  priceCents  Int          @default(0)
+  currency    String       @default("eur")
+  level       Level        @default(BEGINNER)
+  category    String?
+  published   Boolean      @default(false)
+  featured    Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  modules     Module[]
+  enrollments Enrollment[]
+
+  @@map("courses")
+}
+
+model Module {
+  id        String   @id @default(cuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title     String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  lessons   Lesson[]
+
+  @@index([courseId])
+  @@map("modules")
+}
+
+model Lesson {
+  id            String      @id @default(cuid())
+  moduleId      String
+  module        Module      @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title         String
+  order         Int         @default(0)
+  type          LessonType  @default(VIDEO)
+  videoUrl      String?
+  content       String?
+  durationMin   Int?
+  isFreePreview Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  progress      Progress[]
+
+  @@index([moduleId])
+  @@map("lessons")
+}
+
+model Enrollment {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId        String
+  course          Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  amountPaidCents Int
+  stripeSessionId String?  @unique
+  createdAt       DateTime @default(now())
+
+  @@unique([userId, courseId])
+  @@index([courseId])
+  @@map("enrollments")
+}
+
+model Progress {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId    String
+  lesson      Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completed   Boolean   @default(true)
+  completedAt DateTime  @default(now())
+
+  @@unique([userId, lessonId])
+  @@map("progress")
+}

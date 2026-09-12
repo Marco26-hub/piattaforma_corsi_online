@@ -1,26 +1,102 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #080b09;
+  --foreground: #edf4f1;
+
+  --color-brand-50: #e8f3ef;
+  --color-brand-100: #cfe6dc;
+  --color-brand-200: #9dccb7;
+  --color-brand-300: #6bb293;
+  --color-brand-400: #3fa080;
+  --color-brand-500: #1f8462;
+  --color-brand-600: #0f6b4f;
+  --color-brand-700: #0b5540;
+  --color-brand-800: #093f30;
+  --color-brand-900: #062a20;
+
+  --color-accent-400: #f0916a;
+  --color-accent-500: #e8734a;
+  --color-accent-600: #cf5a33;
+
+  --color-surface: #0e1310;
+  --color-surface-muted: #131813;
+  --color-border-subtle: #2a332c;
+  --color-border-strong: #4b5d56;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-serif: Georgia, "Times New Roman", Times, serif;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-brand-50: var(--color-brand-50);
+  --color-brand-100: var(--color-brand-100);
+  --color-brand-200: var(--color-brand-200);
+  --color-brand-300: var(--color-brand-300);
+  --color-brand-400: var(--color-brand-400);
+  --color-brand-500: var(--color-brand-500);
+  --color-brand-600: var(--color-brand-600);
+  --color-brand-700: var(--color-brand-700);
+  --color-brand-800: var(--color-brand-800);
+  --color-brand-900: var(--color-brand-900);
+
+  --color-accent-400: var(--color-accent-400);
+  --color-accent-500: var(--color-accent-500);
+  --color-accent-600: var(--color-accent-600);
+
+  --color-surface: var(--color-surface);
+  --color-surface-muted: var(--color-surface-muted);
+  --color-border-subtle: var(--color-border-subtle);
+  --color-border-strong: var(--color-border-strong);
+
+  --animate-fade-up: fade-up 0.6s ease-out both;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+.font-serif {
+  letter-spacing: -0.01em;
+}
+
+.container-app {
+  width: 100%;
+  max-width: 80rem;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .container-app {
+    padding-inline: 2rem;
+  }
+}
+
+.accent-rule {
+  display: block;
+  width: 4.5rem;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-accent-500);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
 }
