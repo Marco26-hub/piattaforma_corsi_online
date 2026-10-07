@@ -24,7 +24,8 @@ export const courseSchema = z.object({
   imageUrl: z.union([z.url("URL immagine non valido"), z.literal("")]).optional(),
   price: z.coerce
     .number()
-    .min(1, "I corsi sono a pagamento: il prezzo minimo è 1 euro"),
+    .min(0, "Il prezzo non può essere negativo")
+    .max(21474836.47, "Prezzo troppo alto"),
   level: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"]),
   category: z.string().optional(),
   published: z.coerce.boolean().optional(),

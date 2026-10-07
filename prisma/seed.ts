@@ -4,22 +4,33 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  const adminEmail = (process.env.SEED_ADMIN_EMAIL ?? "admin@example.com").toLowerCase();
-  const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? "changeme123";
+  const adminEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+  if (!adminEmail || !adminEmail.includes("@") || !adminPassword || adminPassword.length < 12) {
+    throw new Error("Imposta SEED_ADMIN_EMAIL e SEED_ADMIN_PASSWORD (almeno 12 caratteri). Nessuna credenziale predefinita.");
+  }
 
   const passwordHash = await bcrypt.hash(adminPassword, 10);
 
   await prisma.user.upsert({
     where: { email: adminEmail },
-    update: {},
+    update: {
+      passwordHash,
+      role: "ADMIN",
+      approved: true,
+    },
     create: {
       email: adminEmail,
       name: "Admin",
       passwordHash,
       role: "ADMIN",
+      approved: true,
     },
   });
   console.log(`Admin pronto: ${adminEmail}`);
+
+  if (process.env.SEED_DEMO_COURSES !== "true") return;
+  if (process.env.NODE_ENV === "production") throw new Error("I corsi demo non possono essere creati in produzione.");
 
   const webDevCourse = await prisma.course.upsert({
     where: { slug: "sviluppo-web-da-zero" },
@@ -33,7 +44,7 @@ async function main() {
       priceCents: 49700,
       level: "BEGINNER",
       category: "Sviluppo Web",
-      published: true,
+      published: false,
       featured: true,
       imageUrl: null,
       modules: {
@@ -102,7 +113,7 @@ async function main() {
       priceCents: 89700,
       level: "INTERMEDIATE",
       category: "Business",
-      published: true,
+      published: false,
       featured: true,
       imageUrl: null,
       modules: {

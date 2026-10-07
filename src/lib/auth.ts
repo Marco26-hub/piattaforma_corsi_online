@@ -4,9 +4,15 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  basePath: "/academy/api/auth",
+  cookies: {
+    sessionToken: { name: "swa-academy.session-token", options: { httpOnly: true, sameSite: "lax", path: "/academy", secure: process.env.NODE_ENV === "production" } },
+    csrfToken: { name: "swa-academy.csrf-token", options: { httpOnly: true, sameSite: "lax", path: "/academy", secure: process.env.NODE_ENV === "production" } },
+    callbackUrl: { name: "swa-academy.callback-url", options: { sameSite: "lax", path: "/academy", secure: process.env.NODE_ENV === "production" } },
+  },
   session: { strategy: "jwt" },
   pages: {
-    signIn: "/login",
+    signIn: "/academy/login",
   },
   providers: [
     Credentials({
@@ -25,7 +31,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const user = await prisma.user.findUnique({
           where: { email: email.toLowerCase().trim() },
         });
-        if (!user) return null;
+        if (!user || !user.approved) return null;
 
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return null;

@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/guards";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UserRoleToggle } from "@/components/admin/user-role-toggle";
+import { UserApprovalToggle } from "@/components/admin/user-approval-toggle";
 
 export const metadata = { title: "Utenti" };
 
@@ -37,6 +38,12 @@ export default async function AdminUsersPage() {
               {user._count.enrollments} corsi acquistati
             </span>
             <Badge variant={user.role === "ADMIN" ? "brand" : "neutral"}>{user.role}</Badge>
+            <Badge variant={user.approved ? "brand" : "neutral"}>
+              {user.approved ? "ATTIVO" : "IN ATTESA"}
+            </Badge>
+            {user.id !== session.user.id && (
+              <UserApprovalToggle userId={user.id} approved={user.approved} />
+            )}
             {user.id !== session.user.id && (
               <UserRoleToggle userId={user.id} role={user.role} />
             )}

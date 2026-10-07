@@ -6,6 +6,7 @@ import { Menu, X, LayoutDashboard, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/site/logo";
 import { logoutAction } from "@/app/actions/auth";
+import { ThemeToggle } from "@/components/site/theme-toggle";
 
 type HeaderUser = {
   name?: string | null;
@@ -17,8 +18,6 @@ export function SiteHeader({ user }: { user: HeaderUser }) {
 
   const navLinks = [
     { href: "/corsi", label: "Corsi" },
-    { href: "/#come-funziona", label: "Come funziona" },
-    { href: "/#recensioni", label: "Recensioni" },
   ];
 
   return (
@@ -41,6 +40,7 @@ export function SiteHeader({ user }: { user: HeaderUser }) {
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
+          <ThemeToggle />
           {user ? (
             <>
               <Button
@@ -85,6 +85,7 @@ export function SiteHeader({ user }: { user: HeaderUser }) {
       {open && (
         <div className="border-t border-border-subtle bg-background md:hidden">
           <nav className="container-app flex flex-col gap-1 py-4">
+            <ThemeToggle />
             {navLinks.map((link) => (
               <Link
                 key={link.href}

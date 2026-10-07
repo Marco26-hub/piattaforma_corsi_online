@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { CheckCircle2, Lock, PlayCircle, Signal, Clock, FileText } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { startCheckout } from "@/app/actions/checkout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { SubmitButton } from "@/components/ui/submit-button";
 import { formatPrice } from "@/lib/utils";
+import { CheckoutForm } from "@/components/checkout-form";
 
 const LEVEL_LABEL: Record<string, string> = {
   BEGINNER: "Base",
@@ -119,9 +119,10 @@ export default async function CourseDetailPage({
                           ) : (
                             <Lock className="size-4 shrink-0 text-foreground/30" />
                           )}
-                          <span className={unlocked ? "" : "text-foreground/50"}>
-                            {lesson.title}
-                          </span>
+                          {unlocked ? <Link prefetch={false} className="hover:underline" href={enrollment
+                            ? `/dashboard/corsi/${course.slug}?lezione=${lesson.id}`
+                            : `/corsi/${course.slug}/anteprima/${lesson.id}`}>{lesson.title}</Link>
+                            : <span className="text-foreground/50">{lesson.title}</span>}
                           {lesson.isFreePreview && (
                             <Badge variant="accent" className="ml-1">
                               Anteprima
@@ -157,11 +158,7 @@ export default async function CourseDetailPage({
               Vai al corso
             </Button>
           ) : session?.user ? (
-            <form action={startCheckout.bind(null, course.id)}>
-              <SubmitButton className="w-full" size="lg" pendingLabel="Reindirizzamento...">
-                Acquista ora
-              </SubmitButton>
-            </form>
+            <CheckoutForm courseId={course.id} free={course.priceCents === 0} />
           ) : (
             <Button href={`/login?callbackUrl=/corsi/${course.slug}`} className="w-full" size="lg">
               Accedi per acquistare

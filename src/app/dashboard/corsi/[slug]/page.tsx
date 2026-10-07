@@ -46,7 +46,7 @@ export default async function LearnCoursePage({
   });
 
   if (!enrollment && stripeSessionId) {
-    enrollment = await confirmCheckoutSession(stripeSessionId, session.user.id);
+    enrollment = await confirmCheckoutSession(stripeSessionId, course.id);
   }
 
   if (!enrollment) redirect(`/corsi/${course.slug}`);

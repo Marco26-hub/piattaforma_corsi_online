@@ -3,6 +3,7 @@ import { BookOpen, LogOut, Compass } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { Logo } from "@/components/site/logo";
 import { logoutAction } from "@/app/actions/auth";
+import { ThemeToggle } from "@/components/site/theme-toggle";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,7 @@ export default async function DashboardLayout({
           </nav>
 
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <span className="hidden text-sm text-foreground/60 sm:inline">
               {session?.user?.name}
             </span>

@@ -32,9 +32,9 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
       </SubmitButton>
 
       <p className="text-center text-sm text-foreground/60">
-        Non hai un account?{" "}
-        <Link href="/registrati" className="font-medium text-brand-400 hover:underline">
-          Registrati
+        Non hai ancora accesso?{" "}
+        <Link href="/richiedi-accesso" className="font-medium text-brand-400 hover:underline">
+          Richiedilo
         </Link>
       </p>
     </form>

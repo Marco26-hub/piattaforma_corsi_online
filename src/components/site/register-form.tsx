@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { FormError } from "@/components/ui/form-error";
+import { CheckCircle2 } from "lucide-react";
 
 export function RegisterForm() {
   const [state, formAction] = useActionState(registerAction, undefined);
@@ -14,6 +15,12 @@ export function RegisterForm() {
   return (
     <form action={formAction} className="space-y-5">
       <FormError message={state?.error} />
+      {state?.success && (
+        <div className="flex items-center gap-2 rounded-xl border border-emerald-800/40 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-300">
+          <CheckCircle2 className="size-4 shrink-0" />
+          <span>{state.success}</span>
+        </div>
+      )}
 
       <div>
         <Label htmlFor="name">Nome</Label>
@@ -35,8 +42,8 @@ export function RegisterForm() {
         <Input id="confirmPassword" name="confirmPassword" type="password" required />
       </div>
 
-      <SubmitButton className="w-full" size="lg" pendingLabel="Creazione account...">
-        Crea account
+      <SubmitButton className="w-full" size="lg" pendingLabel="Invio richiesta...">
+        Richiedi accesso
       </SubmitButton>
 
       <p className="text-center text-sm text-foreground/60">

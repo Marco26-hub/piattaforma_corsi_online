@@ -80,7 +80,7 @@ export function CourseForm({
             name="price"
             type="number"
             step="0.01"
-            min="1"
+            min="0"
             required
             defaultValue={
               defaultValues ? (defaultValues.priceCents / 100).toFixed(2) : "297"

@@ -1,24 +1,38 @@
 @import "tailwindcss";
 
 :root {
-  --background: #080b09;
-  --foreground: #edf4f1;
+  --background: #ffffff;
+  --foreground: #15231f;
 
   --color-brand-50: #e8f3ef;
   --color-brand-100: #cfe6dc;
   --color-brand-200: #9dccb7;
-  --color-brand-300: #6bb293;
-  --color-brand-400: #3fa080;
-  --color-brand-500: #1f8462;
+  --color-brand-300: #0f6b4f;
+  --color-brand-400: #0f6b4f;
+  --color-brand-500: #0f6b4f;
   --color-brand-600: #0f6b4f;
   --color-brand-700: #0b5540;
   --color-brand-800: #093f30;
   --color-brand-900: #062a20;
 
-  --color-accent-400: #f0916a;
-  --color-accent-500: #e8734a;
-  --color-accent-600: #cf5a33;
+  --color-accent-400: #d8aa35;
+  --color-accent-500: #866614;
+  --color-accent-600: #6c510d;
 
+  --color-surface: #ffffff;
+  --color-surface-muted: #f5f7f5;
+  --color-border-subtle: #dbe2de;
+  --color-border-strong: #718078;
+}
+
+html[data-theme="dark"] {
+  --background: #080b09;
+  --foreground: #edf4f1;
+  --color-brand-300: #6bb293;
+  --color-brand-400: #6bb293;
+  --color-brand-500: #1f8462;
+  --color-accent-500: #d8aa35;
+  --color-accent-600: #bc9028;
   --color-surface: #0e1310;
   --color-surface-muted: #131813;
   --color-border-subtle: #2a332c;
@@ -28,8 +42,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
-  --font-serif: Georgia, "Times New Roman", Times, serif;
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-serif: Arial, Helvetica, sans-serif;
 
   --color-brand-50: var(--color-brand-50);
   --color-brand-100: var(--color-brand-100);
@@ -61,7 +75,15 @@ body {
 }
 
 .font-serif {
-  letter-spacing: -0.01em;
+  letter-spacing: -0.025em;
+  font-weight: 750;
+}
+
+button, a, input, textarea, select { touch-action: manipulation; }
+*:focus-visible { outline: 3px solid #d8aa35; outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; scroll-behavior: auto !important; }
 }
 
 .container-app {

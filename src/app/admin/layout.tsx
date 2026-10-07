@@ -1,6 +1,9 @@
 import Link from "next/link";
-import { LayoutDashboard, BookOpen, Users, LogOut, ExternalLink, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, BookOpen, Users, LogOut, ExternalLink } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
+import { requireAdmin } from "@/lib/guards";
+import { Logo } from "@/components/site/logo";
+import { ThemeToggle } from "@/components/site/theme-toggle";
 
 export const dynamic = "force-dynamic";
 
@@ -10,15 +13,16 @@ const NAV_ITEMS = [
   { href: "/admin/utenti", label: "Utenti", icon: Users },
 ];
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  await requireAdmin();
   return (
     <div className="flex min-h-screen bg-surface-muted">
       <aside className="hidden w-64 shrink-0 border-r border-border-subtle bg-background lg:flex lg:flex-col">
         <div className="flex h-16 items-center gap-2 border-b border-border-subtle px-6 font-semibold">
-          <ShieldCheck className="size-5 text-brand-400" />
-          Admin
+          <Logo className="text-sm" />
         </div>
         <nav className="flex-1 space-y-1 p-4">
+          <p className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-brand-400">Admin Corsi</p>
           {NAV_ITEMS.map((item) => (
             <Link
               key={item.href}
@@ -53,9 +57,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border-subtle bg-background/90 px-4 backdrop-blur-lg lg:hidden">
           <div className="flex items-center gap-2 font-semibold">
-            <ShieldCheck className="size-5 text-brand-400" />
-            Admin
+            <Logo className="text-sm" />
           </div>
+          <ThemeToggle />
           <form action={logoutAction}>
             <button
               type="submit"
@@ -80,6 +84,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           ))}
         </nav>
 
+        <div className="hidden items-center justify-between border-b border-border-subtle bg-background px-8 py-4 lg:flex"><span className="font-bold">Admin Corsi · SWA</span><ThemeToggle /></div>
         <main className="flex-1 p-4 md:p-8">{children}</main>
       </div>
     </div>

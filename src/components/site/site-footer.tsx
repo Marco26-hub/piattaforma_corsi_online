@@ -48,7 +48,7 @@ export function SiteFooter() {
 
       <div className="border-t border-border-subtle py-6">
         <p className="container-app text-center text-xs text-foreground/50">
-          © {new Date().getFullYear()} Formia. Tutti i diritti riservati.
+          © {new Date().getFullYear()} SWA Academy. Tutti i diritti riservati.
         </p>
       </div>
     </footer>

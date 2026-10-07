@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { signIn, signOut } from "@/lib/auth";
 import { registerSchema, loginSchema } from "@/lib/validations";
 
-export type ActionState = { error?: string } | undefined;
+export type ActionState = { error?: string; success?: string } | undefined;
 
 export async function loginAction(
   _prevState: ActionState,
@@ -24,12 +24,17 @@ export async function loginAction(
   const email = parsed.data.email.toLowerCase().trim();
   const explicitCallbackUrl = formData.get("callbackUrl") as string | null;
 
-  let destination = explicitCallbackUrl || "/dashboard";
-  if (!explicitCallbackUrl || explicitCallbackUrl === "/dashboard") {
-    const targetUser = await prisma.user.findUnique({
-      where: { email },
-      select: { role: true },
-    });
+  const safeCallbackUrl = explicitCallbackUrl?.startsWith("/") && !explicitCallbackUrl.startsWith("//") && !explicitCallbackUrl.includes("\\")
+    ? explicitCallbackUrl : null;
+  const targetUser = await prisma.user.findUnique({
+    where: { email },
+    select: { role: true, approved: true },
+  });
+  if (targetUser && !targetUser.approved) {
+    return { error: "La richiesta di accesso è ancora in attesa di approvazione." };
+  }
+  let destination = safeCallbackUrl || "/dashboard";
+  if (!safeCallbackUrl || safeCallbackUrl === "/dashboard") {
     destination = targetUser?.role === "ADMIN" ? "/admin" : "/dashboard";
   }
 
@@ -37,7 +42,7 @@ export async function loginAction(
     await signIn("credentials", {
       email,
       password: parsed.data.password,
-      redirectTo: destination,
+      redirectTo: destination.startsWith("/academy/") ? destination : `/academy${destination}`,
     });
   } catch (error) {
     if (error instanceof AuthError) {
@@ -77,23 +82,13 @@ export async function registerAction(
       email,
       passwordHash,
       role: "CUSTOMER",
+      approved: false,
     },
   });
 
-  try {
-    await signIn("credentials", {
-      email,
-      password: parsed.data.password,
-      redirectTo: "/dashboard",
-    });
-  } catch (error) {
-    if (error instanceof AuthError) {
-      return { error: "Account creato, ma accesso automatico fallito. Prova ad accedere." };
-    }
-    throw error;
-  }
+  return { success: "Richiesta inviata. Potrai accedere dopo l’approvazione dell’amministratore." };
 }
 
 export async function logoutAction() {
-  await signOut({ redirectTo: "/" });
+  await signOut({ redirectTo: "/academy/" });
 }

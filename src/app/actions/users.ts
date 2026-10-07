@@ -14,3 +14,14 @@ export async function setUserRole(userId: string, role: "ADMIN" | "CUSTOMER") {
   await prisma.user.update({ where: { id: userId }, data: { role } });
   revalidatePath("/admin/utenti");
 }
+
+export async function setUserApproval(userId: string, approved: boolean) {
+  const session = await requireAdmin();
+
+  if (session.user.id === userId && !approved) {
+    throw new Error("Non puoi revocare il tuo stesso accesso");
+  }
+
+  await prisma.user.update({ where: { id: userId }, data: { approved } });
+  revalidatePath("/admin/utenti");
+}
