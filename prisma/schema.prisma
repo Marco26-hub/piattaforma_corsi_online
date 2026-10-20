@@ -107,6 +107,17 @@ model Enrollment {
   @@map("enrollments")
 }
 
+model EnrollmentRevocation {
+  userId            String
+  courseId          String
+  checkoutSessionId String
+  reason            String
+  createdAt         DateTime @default(now())
+
+  @@id([userId, courseId, checkoutSessionId])
+  @@map("enrollment_revocations")
+}
+
 model Progress {
   id          String    @id @default(cuid())
   userId      String

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/site/logo";
+import { COMPANY, LEGAL_LINKS } from "@/lib/legal";
 
 export function SiteFooter() {
   return (
@@ -37,19 +38,39 @@ export function SiteFooter() {
         </div>
 
         <div>
-          <h3 className="text-sm font-semibold">Assistenza</h3>
+          <h3 className="text-sm font-semibold">Informazioni</h3>
           <ul className="mt-4 space-y-3 text-sm text-foreground/60">
-            <li>Pagamenti sicuri con Stripe</li>
-            <li>Accesso immediato dopo l&apos;acquisto</li>
-            <li>Supporto via email</li>
+            <li>
+              <a href={LEGAL_LINKS.termini} target="_blank" rel="noreferrer" className="hover:text-foreground">
+                Termini e condizioni
+              </a>
+            </li>
+            <li>
+              <a href={LEGAL_LINKS.privacy} target="_blank" rel="noreferrer" className="hover:text-foreground">
+                Privacy
+              </a>
+            </li>
+            <li>
+              <a href={LEGAL_LINKS.cookie} target="_blank" rel="noreferrer" className="hover:text-foreground">
+                Cookie policy
+              </a>
+            </li>
+            <li>
+              <a href={LEGAL_LINKS.recesso} target="_blank" rel="noreferrer" className="hover:text-foreground">
+                Diritto di recesso
+              </a>
+            </li>
           </ul>
         </div>
       </div>
 
       <div className="border-t border-border-subtle py-6">
-        <p className="container-app text-center text-xs text-foreground/50">
-          © {new Date().getFullYear()} SWA Academy. Tutti i diritti riservati.
-        </p>
+        <div className="container-app space-y-1 text-center text-xs text-foreground/50">
+          <p>© {new Date().getFullYear()} SWA Academy. Tutti i diritti riservati.</p>
+          <p>
+            {COMPANY.name} · P.IVA {COMPANY.vat} · {COMPANY.address}
+          </p>
+        </div>
       </div>
     </footer>
   );

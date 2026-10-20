@@ -7,7 +7,7 @@ export function isCompletedCoursePayment(
   expected?: { userId: string; courseId: string },
 ) {
   return session.mode === "payment" && session.status === "complete" &&
-    (session.payment_status === "paid" || session.payment_status === "no_payment_required") &&
+    (session.payment_status === "paid" || (session.payment_status === "no_payment_required" && session.amount_total === 0)) &&
     typeof session.metadata?.userId === "string" && !!session.metadata.userId &&
     typeof session.metadata?.courseId === "string" && !!session.metadata.courseId &&
     typeof session.amount_total === "number" && session.amount_total >= 0 &&

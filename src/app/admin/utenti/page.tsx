@@ -2,10 +2,13 @@ import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/guards";
+import { revokeEnrollment } from "@/app/actions/users";
+import { formatPrice } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UserRoleToggle } from "@/components/admin/user-role-toggle";
 import { UserApprovalToggle } from "@/components/admin/user-approval-toggle";
+import { DeleteIconButton } from "@/components/admin/delete-icon-button";
 
 export const metadata = { title: "Utenti" };
 
@@ -14,7 +17,12 @@ export default async function AdminUsersPage() {
 
   const users = await prisma.user.findMany({
     orderBy: { createdAt: "desc" },
-    include: { _count: { select: { enrollments: true } } },
+    include: {
+      enrollments: {
+        orderBy: { createdAt: "desc" },
+        include: { course: { select: { id: true, title: true } } },
+      },
+    },
   });
 
   return (
@@ -26,26 +34,52 @@ export default async function AdminUsersPage() {
 
       <div className="space-y-3">
         {users.map((user) => (
-          <Card key={user.id} className="flex flex-wrap items-center gap-4 p-4">
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">{user.name ?? "Senza nome"}</p>
-              <p className="truncate text-sm text-foreground/50">{user.email}</p>
+          <Card key={user.id} className="p-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="min-w-0 basis-full sm:min-w-48 sm:flex-1 sm:basis-auto">
+                <p className="truncate font-medium">{user.name ?? "Senza nome"}</p>
+                <p className="truncate text-sm text-foreground/50">{user.email}</p>
+              </div>
+              <span className="hidden text-xs text-foreground/40 sm:inline">
+                Iscritto {formatDistanceToNow(user.createdAt, { addSuffix: true, locale: it })}
+              </span>
+              <span className="text-sm text-foreground/50">
+                {user.enrollments.length} corsi acquistati
+              </span>
+              <Badge variant={user.role === "ADMIN" ? "brand" : "neutral"}>{user.role}</Badge>
+              <Badge variant={user.approved ? "brand" : "neutral"}>
+                {user.approved ? "ATTIVO" : "IN ATTESA"}
+              </Badge>
+              {user.id !== session.user.id && (
+                <UserApprovalToggle userId={user.id} approved={user.approved} />
+              )}
+              {user.id !== session.user.id && (
+                <UserRoleToggle userId={user.id} role={user.role} />
+              )}
             </div>
-            <span className="hidden text-xs text-foreground/40 sm:inline">
-              Iscritto {formatDistanceToNow(user.createdAt, { addSuffix: true, locale: it })}
-            </span>
-            <span className="text-sm text-foreground/50">
-              {user._count.enrollments} corsi acquistati
-            </span>
-            <Badge variant={user.role === "ADMIN" ? "brand" : "neutral"}>{user.role}</Badge>
-            <Badge variant={user.approved ? "brand" : "neutral"}>
-              {user.approved ? "ATTIVO" : "IN ATTESA"}
-            </Badge>
-            {user.id !== session.user.id && (
-              <UserApprovalToggle userId={user.id} approved={user.approved} />
-            )}
-            {user.id !== session.user.id && (
-              <UserRoleToggle userId={user.id} role={user.role} />
+
+            {user.enrollments.length > 0 && (
+              <ul className="mt-4 space-y-2 border-t border-border-subtle pt-4">
+                {user.enrollments.map((enrollment) => (
+                  <li
+                    key={enrollment.id}
+                    className="flex items-center gap-3 rounded-lg bg-surface-muted px-3 py-2 text-sm"
+                  >
+                    <span className="min-w-0 flex-1 truncate">{enrollment.course.title}</span>
+                    <span className="shrink-0 text-xs text-foreground/40">
+                      {formatPrice(enrollment.amountPaidCents)}
+                    </span>
+                    <span className="hidden shrink-0 text-xs text-foreground/40 sm:inline">
+                      {formatDistanceToNow(enrollment.createdAt, { addSuffix: true, locale: it })}
+                    </span>
+                    <DeleteIconButton
+                      label="Revoca accesso al corso"
+                      confirmMessage={`Revocare a ${user.email} l'accesso a "${enrollment.course.title}"? Usalo dopo aver emesso il rimborso su Stripe.`}
+                      action={revokeEnrollment.bind(null, user.id, enrollment.course.id, enrollment.id)}
+                    />
+                  </li>
+                ))}
+              </ul>
             )}
           </Card>
         ))}

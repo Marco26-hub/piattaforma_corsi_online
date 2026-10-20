@@ -7,15 +7,19 @@ import { toast } from "sonner";
 export function DeleteIconButton({
   confirmMessage,
   action,
+  label = "Elimina",
 }: {
   confirmMessage: string;
   action: () => Promise<void>;
+  label?: string;
 }) {
   const [isPending, startTransition] = useTransition();
 
   return (
     <button
       type="button"
+      aria-label={label}
+      title={label}
       disabled={isPending}
       onClick={() => {
         if (!window.confirm(confirmMessage)) return;

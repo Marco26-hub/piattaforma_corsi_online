@@ -85,8 +85,10 @@ connection string dal dashboard:
 3. **In produzione**, crea l'endpoint webhook dal dashboard Stripe
    (Sviluppatori → Webhook → Aggiungi endpoint):
 
-   - URL: `https://<tuo-dominio>/api/webhooks/stripe`
-   - Evento da ascoltare: `checkout.session.completed`
+   - URL: `https://<tuo-dominio>/academy/api/webhooks/stripe`
+   - Eventi da ascoltare: `checkout.session.completed` (attiva l'iscrizione)
+     e `charge.refunded` (revoca l'accesso associato alla sola sessione rimborsata).
+     Mantenere anche `checkout.session.async_payment_succeeded` per i pagamenti asincroni.
    - Copia il "Signing secret" generato in `STRIPE_WEBHOOK_SECRET` (variabile
      d'ambiente del progetto Vercel)
 

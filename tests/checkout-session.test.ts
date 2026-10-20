@@ -25,4 +25,5 @@ test("rejects missing metadata/amount and permits a fully discounted completed p
   assert.equal(isCompletedCoursePayment({ ...paid, amount_total: null }), false);
   assert.equal(isCompletedCoursePayment({ ...paid, amount_total: -1 }), false);
   assert.equal(isCompletedCoursePayment({ ...paid, payment_status: "no_payment_required", amount_total: 0 }, expected), true);
+  assert.equal(isCompletedCoursePayment({ ...paid, payment_status: "no_payment_required", amount_total: 4900 }, expected), false);
 });
