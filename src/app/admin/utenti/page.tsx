@@ -26,55 +26,57 @@ export default async function AdminUsersPage() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 [&_button]:min-h-11 [&_button]:min-w-11 [&_button]:text-sm [&_button]:leading-5 [&_button]:text-foreground [&_button_svg]:size-4">
       <div>
-        <h1 className="font-serif text-2xl font-medium">Utenti</h1>
-        <p className="mt-1 text-foreground/60">{users.length} account registrati.</p>
+        <h1 className="text-2xl font-semibold">Utenti</h1>
+        <p className="mt-1 text-base text-foreground/80">{users.length} utenti registrati.</p>
       </div>
 
       <div className="space-y-3">
         {users.map((user) => (
-          <Card key={user.id} className="p-4">
-            <div className="flex flex-wrap items-center gap-4">
+          <Card key={user.id} className="p-4" role="group" aria-label={`Utente ${user.email}`}>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
               <div className="min-w-0 basis-full sm:min-w-48 sm:flex-1 sm:basis-auto">
-                <p className="truncate font-medium">{user.name ?? "Senza nome"}</p>
-                <p className="truncate text-sm text-foreground/50">{user.email}</p>
+                <p className="text-base font-semibold leading-6 [overflow-wrap:anywhere]">{user.name ?? "Senza nome"}</p>
+                <p className="text-base leading-6 text-foreground/80 [overflow-wrap:anywhere]">{user.email}</p>
               </div>
-              <span className="hidden text-xs text-foreground/40 sm:inline">
-                Iscritto {formatDistanceToNow(user.createdAt, { addSuffix: true, locale: it })}
+              <span className="text-sm leading-5 text-foreground/75">
+                Registrato {formatDistanceToNow(user.createdAt, { addSuffix: true, locale: it })}
               </span>
-              <span className="text-sm text-foreground/50">
-                {user.enrollments.length} corsi acquistati
+              <span className="text-base font-medium">
+                {user.enrollments.length === 0 ? "Nessun corso attivo" : `Accesso a ${user.enrollments.length} ${user.enrollments.length === 1 ? "corso" : "corsi"}`}
               </span>
-              <Badge variant={user.role === "ADMIN" ? "brand" : "neutral"}>{user.role}</Badge>
-              <Badge variant={user.approved ? "brand" : "neutral"}>
-                {user.approved ? "ATTIVO" : "IN ATTESA"}
+              <Badge variant="outline" className="text-sm normal-case tracking-normal text-foreground">
+                {user.role === "ADMIN" ? "Amministratore" : "Cliente"}
+              </Badge>
+              <Badge variant="outline" className={`text-sm normal-case tracking-normal ${user.approved ? "border-brand-400 text-brand-400" : "text-foreground"}`}>
+                {user.approved ? "Accesso consentito" : "Accesso da approvare"}
               </Badge>
               {user.id !== session.user.id && (
-                <UserApprovalToggle userId={user.id} approved={user.approved} />
-              )}
-              {user.id !== session.user.id && (
-                <UserRoleToggle userId={user.id} role={user.role} />
+                <div className="flex basis-full flex-wrap gap-2 sm:basis-auto">
+                  <UserApprovalToggle userId={user.id} approved={user.approved} />
+                  <UserRoleToggle userId={user.id} role={user.role} />
+                </div>
               )}
             </div>
 
             {user.enrollments.length > 0 && (
-              <ul className="mt-4 space-y-2 border-t border-border-subtle pt-4">
+              <ul className="mt-4 divide-y divide-border-subtle border-t border-border-subtle">
                 {user.enrollments.map((enrollment) => (
                   <li
                     key={enrollment.id}
-                    className="flex items-center gap-3 rounded-lg bg-surface-muted px-3 py-2 text-sm"
+                    className="flex items-center gap-3 py-3"
                   >
-                    <span className="min-w-0 flex-1 truncate">{enrollment.course.title}</span>
-                    <span className="shrink-0 text-xs text-foreground/40">
-                      {formatPrice(enrollment.amountPaidCents)}
-                    </span>
-                    <span className="hidden shrink-0 text-xs text-foreground/40 sm:inline">
-                      {formatDistanceToNow(enrollment.createdAt, { addSuffix: true, locale: it })}
-                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-base font-medium leading-6 [overflow-wrap:anywhere]">{enrollment.course.title}</p>
+                      <p className="mt-1 text-sm leading-5 text-foreground/75">
+                        <span className="tabular-nums">{formatPrice(enrollment.amountPaidCents)}</span>
+                        {" · "}{formatDistanceToNow(enrollment.createdAt, { addSuffix: true, locale: it })}
+                      </p>
+                    </div>
                     <DeleteIconButton
-                      label="Revoca accesso al corso"
-                      confirmMessage={`Revocare a ${user.email} l'accesso a "${enrollment.course.title}"? Usalo dopo aver emesso il rimborso su Stripe.`}
+                      label="Rimuovi accesso al corso"
+                      confirmMessage={`Rimuovere a ${user.email} l'accesso al corso "${enrollment.course.title}"? Usalo dopo aver emesso il rimborso su Stripe.`}
                       action={revokeEnrollment.bind(null, user.id, enrollment.course.id, enrollment.id)}
                     />
                   </li>

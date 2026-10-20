@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { formatPrice } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 
-export const metadata = { title: "Admin" };
+export const metadata = { title: "Riepilogo" };
 
 async function getStats() {
   const [totalCourses, publishedCourses, totalStudents, revenue, totalEnrollments, recentEnrollments] =
@@ -50,7 +50,7 @@ export default async function AdminDashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-serif text-2xl font-medium">Dashboard</h1>
+        <h1 className="font-serif text-2xl font-medium">Riepilogo</h1>
         <p className="mt-1 text-foreground/60">Panoramica della piattaforma.</p>
       </div>
 

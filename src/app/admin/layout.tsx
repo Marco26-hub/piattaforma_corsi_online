@@ -8,7 +8,7 @@ import { ThemeToggle } from "@/components/site/theme-toggle";
 export const dynamic = "force-dynamic";
 
 const NAV_ITEMS = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin", label: "Riepilogo", icon: LayoutDashboard },
   { href: "/admin/corsi", label: "Corsi", icon: BookOpen },
   { href: "/admin/utenti", label: "Utenti", icon: Users },
 ];
@@ -22,7 +22,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Logo className="text-sm" />
         </div>
         <nav className="flex-1 space-y-1 p-4">
-          <p className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-brand-400">Admin Corsi</p>
+          <p className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-brand-400">Gestione corsi</p>
           {NAV_ITEMS.map((item) => (
             <Link
               key={item.href}
@@ -84,7 +84,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           ))}
         </nav>
 
-        <div className="hidden items-center justify-between border-b border-border-subtle bg-background px-8 py-4 lg:flex"><span className="font-bold">Admin Corsi · SWA</span><ThemeToggle /></div>
+        <div className="hidden items-center justify-between border-b border-border-subtle bg-background px-8 py-4 lg:flex"><span className="font-bold">Gestione corsi · SWA</span><ThemeToggle /></div>
         <main className="flex-1 p-4 md:p-8">{children}</main>
       </div>
     </div>

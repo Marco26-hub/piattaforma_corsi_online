@@ -23,7 +23,7 @@ export function UserApprovalToggle({ userId, approved }: { userId: string; appro
       className="inline-flex items-center gap-1.5 rounded-full border border-border-subtle px-3 py-1.5 text-xs font-medium hover:bg-surface-muted disabled:opacity-50"
     >
       {isPending ? <Loader2 className="size-3.5 animate-spin" /> : approved ? <X className="size-3.5" /> : <Check className="size-3.5" />}
-      {approved ? "Revoca accesso" : "Approva accesso"}
+      {approved ? "Blocca accesso" : "Approva accesso"}
     </button>
   );
 }

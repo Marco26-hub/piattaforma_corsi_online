@@ -37,7 +37,7 @@ export function UserRoleToggle({
       ) : (
         <ShieldCheck className="size-3.5" />
       )}
-      {role === "ADMIN" ? "Rendi cliente" : "Rendi admin"}
+      {role === "ADMIN" ? "Imposta come cliente" : "Nomina amministratore"}
     </button>
   );
 }
