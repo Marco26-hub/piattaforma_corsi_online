@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -31,15 +31,24 @@ export function CourseForm({
   submitLabel?: string;
 }) {
   const [state, formAction] = useActionState(action, undefined);
+  const [values, setValues] = useState({
+    title: defaultValues?.title ?? "", subtitle: defaultValues?.subtitle ?? "",
+    description: defaultValues?.description ?? "", imageUrl: defaultValues?.imageUrl ?? "",
+    price: defaultValues ? (defaultValues.priceCents / 100).toFixed(2) : "0",
+    category: defaultValues?.category ?? "", level: defaultValues?.level ?? "BEGINNER",
+    featured: defaultValues?.featured ?? false,
+  });
+  const change = <K extends keyof typeof values>(key: K, value: typeof values[K]) => setValues(current => ({ ...current, [key]: value }));
 
   return (
     <form action={formAction} className="space-y-6">
       <FormError message={state?.error} />
+      {state?.success && <p role="status" className="text-sm font-medium text-brand-400">{state.success}</p>}
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <Label htmlFor="title">Titolo del corso</Label>
-          <Input id="title" name="title" required defaultValue={defaultValues?.title} />
+          <Input id="title" name="title" required maxLength={200} value={values.title} onChange={e => change("title", e.target.value)} />
         </div>
 
         <div className="sm:col-span-2">
@@ -48,7 +57,7 @@ export function CourseForm({
             id="subtitle"
             name="subtitle"
             placeholder="Una frase che spiega il corso"
-            defaultValue={defaultValues?.subtitle ?? ""}
+            value={values.subtitle} onChange={e => change("subtitle", e.target.value)}
           />
         </div>
 
@@ -59,17 +68,18 @@ export function CourseForm({
             name="description"
             required
             rows={6}
-            defaultValue={defaultValues?.description}
+            value={values.description} onChange={e => change("description", e.target.value)}
           />
         </div>
 
         <div className="sm:col-span-2">
-          <Label htmlFor="imageUrl">URL immagine di copertina</Label>
+          <Label htmlFor="imageUrl">Immagine di copertina (collegamento)</Label>
           <Input
             id="imageUrl"
             name="imageUrl"
-            placeholder="https://..."
-            defaultValue={defaultValues?.imageUrl ?? ""}
+            type="url"
+            placeholder="https://esempio.it/copertina.jpg"
+            value={values.imageUrl} onChange={e => change("imageUrl", e.target.value)}
           />
         </div>
 
@@ -82,11 +92,8 @@ export function CourseForm({
             step="0.01"
             min="0"
             required
-            defaultValue={
-              defaultValues ? (defaultValues.priceCents / 100).toFixed(2) : "297"
-            }
+            value={values.price} onChange={e => change("price", e.target.value)}
           />
-          <p className="mt-1 text-xs text-foreground/50">Prezzo minimo 1€ — la piattaforma non prevede corsi gratuiti.</p>
         </div>
 
         <div>
@@ -95,13 +102,13 @@ export function CourseForm({
             id="category"
             name="category"
             placeholder="es. Sviluppo Web"
-            defaultValue={defaultValues?.category ?? ""}
+            value={values.category} onChange={e => change("category", e.target.value)}
           />
         </div>
 
         <div>
           <Label htmlFor="level">Livello</Label>
-          <Select id="level" name="level" defaultValue={defaultValues?.level ?? "BEGINNER"}>
+          <Select id="level" name="level" value={values.level} onChange={e => change("level", e.target.value as CourseDefaultValues["level"])}>
             <option value="BEGINNER">Base</option>
             <option value="INTERMEDIATE">Intermedio</option>
             <option value="ADVANCED">Avanzato</option>
@@ -109,20 +116,11 @@ export function CourseForm({
         </div>
 
         <div className="flex items-center gap-6 pt-6">
-          <label className="flex items-center gap-2 text-sm font-medium">
-            <input
-              type="checkbox"
-              name="published"
-              defaultChecked={defaultValues?.published}
-              className="size-4 rounded border-border-subtle accent-brand-600"
-            />
-            Pubblicato
-          </label>
-          <label className="flex items-center gap-2 text-sm font-medium">
+          <label className="flex min-h-11 items-center gap-2 text-sm font-medium">
             <input
               type="checkbox"
               name="featured"
-              defaultChecked={defaultValues?.featured}
+              checked={values.featured} onChange={e => change("featured", e.target.checked)}
               className="size-4 rounded border-border-subtle accent-brand-600"
             />
             In evidenza

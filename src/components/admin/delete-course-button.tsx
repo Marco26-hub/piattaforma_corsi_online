@@ -2,9 +2,9 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Archive } from "lucide-react";
 import { toast } from "sonner";
-import { deleteCourse } from "@/app/actions/courses";
+import { archiveCourse } from "@/app/actions/courses";
 import { Button } from "@/components/ui/button";
 
 export function DeleteCourseButton({ id, title }: { id: string; title: string }) {
@@ -14,25 +14,25 @@ export function DeleteCourseButton({ id, title }: { id: string; title: string })
   return (
     <Button
       type="button"
-      variant="destructive"
+      variant="outline"
       disabled={isPending}
       onClick={() => {
-        if (!window.confirm(`Eliminare definitivamente "${title}"? Questa azione non si può annullare.`)) {
+        if (!window.confirm(`Archiviare "${title}"? Il corso non sara nel catalogo, ma gli iscritti manterranno il loro accesso.`)) {
           return;
         }
         startTransition(async () => {
           try {
-            await deleteCourse(id);
-            toast.success("Corso eliminato");
+            await archiveCourse(id, true);
+            toast.success("Corso archiviato");
             router.push("/admin/corsi");
           } catch {
-            toast.error("Impossibile eliminare il corso");
+            toast.error("Impossibile archiviare il corso");
           }
         });
       }}
     >
-      {isPending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
-      Elimina corso
+      {isPending ? <Loader2 className="size-4 animate-spin" /> : <Archive className="size-4" />}
+      Archivia corso
     </Button>
   );
 }

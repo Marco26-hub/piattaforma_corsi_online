@@ -2,192 +2,122 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/guards";
+import { prisma } from "@/lib/prisma";
 import { courseSchema, moduleSchema, lessonSchema } from "@/lib/validations";
-import { slugify } from "@/lib/utils";
+import { createCourseRecord, updateCourseRecord, duplicateCourseRecord, publishCourseRecord,
+  archiveCourseRecord, saveModuleRecord, removeModuleRecord, saveLessonRecord,
+  removeLessonRecord, moveCourseItem } from "@/lib/course-store";
 import type { ActionState } from "@/app/actions/auth";
 
-async function uniqueSlug(title: string, ignoreId?: string) {
-  const base = slugify(title) || "corso";
-  let slug = base;
-  let attempt = 1;
-  while (
-    await prisma.course.findFirst({
-      where: { slug, ...(ignoreId ? { id: { not: ignoreId } } : {}) },
-    })
-  ) {
-    attempt += 1;
-    slug = `${base}-${attempt}`;
+function errorMessage(error: unknown) {
+  if (error instanceof Error && !error.name.startsWith("Prisma")) return error.message;
+  console.error("[Academy/corsi] salvataggio non riuscito", error);
+  return "Salvataggio non riuscito. Riprova tra qualche istante.";
+}
+
+async function refreshCourse(id?: string) {
+  revalidatePath("/admin/corsi");
+  revalidatePath("/corsi");
+  revalidatePath("/api/public/catalog");
+  if (id) {
+    revalidatePath(`/admin/corsi/${id}`);
+    revalidatePath(`/admin/corsi/${id}/anteprima`);
+    const course = await prisma.course.findUnique({ where: { id }, select: { slug: true } });
+    if (course) {
+      revalidatePath(`/corsi/${course.slug}`);
+      revalidatePath(`/dashboard/corsi/${course.slug}`);
+    }
   }
-  return slug;
 }
 
 function parseCourseForm(formData: FormData) {
   return courseSchema.safeParse({
-    title: formData.get("title"),
-    subtitle: formData.get("subtitle") || undefined,
-    description: formData.get("description"),
-    imageUrl: formData.get("imageUrl") || "",
-    price: formData.get("price"),
-    level: formData.get("level"),
-    category: formData.get("category") || undefined,
-    published: formData.get("published") === "on",
-    featured: formData.get("featured") === "on",
+    title: formData.get("title"), subtitle: formData.get("subtitle") || undefined,
+    description: formData.get("description"), imageUrl: formData.get("imageUrl") || "",
+    price: formData.get("price"), level: formData.get("level"),
+    category: formData.get("category") || undefined, featured: formData.get("featured") === "on",
   });
 }
 
-export async function createCourse(
-  _prevState: ActionState,
-  formData: FormData
-): Promise<ActionState> {
+export async function createCourse(_previous: ActionState, formData: FormData): Promise<ActionState> {
   await requireAdmin();
-
   const parsed = parseCourseForm(formData);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Dati non validi" };
-  }
-
-  const slug = await uniqueSlug(parsed.data.title);
-
-  const course = await prisma.course.create({
-    data: {
-      slug,
-      title: parsed.data.title,
-      subtitle: parsed.data.subtitle,
-      description: parsed.data.description,
-      imageUrl: parsed.data.imageUrl || null,
-      priceCents: Math.round(parsed.data.price * 100),
-      level: parsed.data.level,
-      category: parsed.data.category,
-      published: parsed.data.published ?? false,
-      featured: parsed.data.featured ?? false,
-    },
-  });
-
-  revalidatePath("/admin/corsi");
-  redirect(`/admin/corsi/${course.id}`);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dati non validi" };
+  let id: string;
+  try { id = (await createCourseRecord(parsed.data)).id; }
+  catch (error) { return { error: errorMessage(error) }; }
+  await refreshCourse(id);
+  redirect(`/admin/corsi/${id}`);
 }
 
-export async function updateCourse(
-  id: string,
-  _prevState: ActionState,
-  formData: FormData
-): Promise<ActionState> {
+export async function updateCourse(id: string, _previous: ActionState, formData: FormData): Promise<ActionState> {
   await requireAdmin();
-
   const parsed = parseCourseForm(formData);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Dati non validi" };
-  }
-
-  const current = await prisma.course.findUnique({ where: { id } });
-  if (!current) return { error: "Corso non trovato" };
-
-  const slug =
-    current.title === parsed.data.title
-      ? current.slug
-      : await uniqueSlug(parsed.data.title, id);
-
-  await prisma.course.update({
-    where: { id },
-    data: {
-      slug,
-      title: parsed.data.title,
-      subtitle: parsed.data.subtitle,
-      description: parsed.data.description,
-      imageUrl: parsed.data.imageUrl || null,
-      priceCents: Math.round(parsed.data.price * 100),
-      level: parsed.data.level,
-      category: parsed.data.category,
-      published: parsed.data.published ?? false,
-      featured: parsed.data.featured ?? false,
-    },
-  });
-
-  revalidatePath("/admin/corsi");
-  revalidatePath(`/admin/corsi/${id}`);
-  revalidatePath(`/corsi/${slug}`);
-  return { error: undefined };
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dati non validi" };
+  try { await updateCourseRecord(id, parsed.data); }
+  catch (error) { return { error: errorMessage(error) }; }
+  await refreshCourse(id);
+  return { success: "Modifiche salvate." };
 }
 
-export async function deleteCourse(id: string) {
+export async function duplicateCourse(id: string) {
   await requireAdmin();
-  await prisma.course.delete({ where: { id } });
-  revalidatePath("/admin/corsi");
+  const copy = await duplicateCourseRecord(id);
+  await refreshCourse();
+  return copy.id;
 }
 
 export async function togglePublish(id: string, published: boolean) {
   await requireAdmin();
-  await prisma.course.update({ where: { id }, data: { published } });
-  revalidatePath("/admin/corsi");
-  revalidatePath(`/admin/corsi/${id}`);
+  await publishCourseRecord(id, published);
+  await refreshCourse(id);
 }
 
-export async function createModule(courseId: string, formData: FormData) {
+export async function archiveCourse(id: string, archived: boolean) {
   await requireAdmin();
+  await archiveCourseRecord(id, archived);
+  await refreshCourse(id);
+}
 
-  const parsed = moduleSchema.safeParse({
-    title: formData.get("title"),
-    courseId,
-  });
-  if (!parsed.success) {
-    throw new Error(parsed.error.issues[0]?.message ?? "Dati non validi");
-  }
-
-  const count = await prisma.module.count({ where: { courseId } });
-  await prisma.module.create({
-    data: { title: parsed.data.title, courseId, order: count },
-  });
-
-  revalidatePath(`/admin/corsi/${courseId}`);
+export async function saveModule(courseId: string, moduleId: string | null, _previous: ActionState, formData: FormData): Promise<ActionState> {
+  await requireAdmin();
+  const parsed = moduleSchema.safeParse({ courseId, title: formData.get("title") });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Titolo non valido" };
+  try { await saveModuleRecord(courseId, parsed.data.title, moduleId || undefined); }
+  catch (error) { return { error: errorMessage(error) }; }
+  await refreshCourse(courseId);
+  return { success: moduleId ? "Titolo del modulo salvato." : "Modulo aggiunto." };
 }
 
 export async function deleteModule(courseId: string, moduleId: string) {
   await requireAdmin();
-  await prisma.module.delete({ where: { id: moduleId } });
-  revalidatePath(`/admin/corsi/${courseId}`);
+  await removeModuleRecord(courseId, moduleId);
+  await refreshCourse(courseId);
 }
 
-export async function createLesson(
-  courseId: string,
-  moduleId: string,
-  formData: FormData
-) {
+export async function saveLesson(courseId: string, moduleId: string, lessonId: string | null, _previous: ActionState, formData: FormData): Promise<ActionState> {
   await requireAdmin();
-
   const parsed = lessonSchema.safeParse({
-    title: formData.get("title"),
-    moduleId,
-    type: formData.get("type"),
-    videoUrl: formData.get("videoUrl") || "",
-    content: formData.get("content") || undefined,
-    durationMin: formData.get("durationMin") || undefined,
-    isFreePreview: formData.get("isFreePreview") === "on",
+    moduleId, title: formData.get("title"), type: formData.get("type"),
+    videoUrl: formData.get("videoUrl") || "", content: formData.get("content") || undefined,
+    durationMin: formData.get("durationMin") || undefined, isFreePreview: formData.get("isFreePreview") === "on",
   });
-  if (!parsed.success) {
-    throw new Error(parsed.error.issues[0]?.message ?? "Dati non validi");
-  }
-
-  const count = await prisma.lesson.count({ where: { moduleId } });
-  await prisma.lesson.create({
-    data: {
-      title: parsed.data.title,
-      moduleId,
-      order: count,
-      type: parsed.data.type,
-      videoUrl: parsed.data.videoUrl || null,
-      content: parsed.data.content,
-      durationMin: parsed.data.durationMin,
-      isFreePreview: parsed.data.isFreePreview ?? false,
-    },
-  });
-
-  revalidatePath(`/admin/corsi/${courseId}`);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Lezione non valida" };
+  try { await saveLessonRecord(courseId, parsed.data, lessonId || undefined); }
+  catch (error) { return { error: errorMessage(error) }; }
+  await refreshCourse(courseId);
+  return { success: lessonId ? "Lezione salvata." : "Lezione aggiunta." };
 }
 
 export async function deleteLesson(courseId: string, lessonId: string) {
   await requireAdmin();
-  await prisma.lesson.delete({ where: { id: lessonId } });
-  revalidatePath(`/admin/corsi/${courseId}`);
+  await removeLessonRecord(courseId, lessonId);
+  await refreshCourse(courseId);
+}
+
+export async function moveItem(courseId: string, itemId: string, kind: "module" | "lesson", direction: "up" | "down") {
+  await requireAdmin();
+  await moveCourseItem(courseId, itemId, kind, direction);
+  await refreshCourse(courseId);
 }

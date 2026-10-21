@@ -1,194 +1,89 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, PlayCircle, FileText, Plus, ExternalLink } from "lucide-react";
+import { ArrowLeft, Eye, CheckCircle2, CircleAlert, FileText, PlayCircle, Pencil, Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { updateCourse, createModule, createLesson, deleteModule, deleteLesson } from "@/app/actions/courses";
+import { requireAdmin } from "@/lib/guards";
+import { coursePublicationIssues } from "@/lib/course-publishing";
+import { updateCourse, saveModule, saveLesson } from "@/app/actions/courses";
 import { CourseForm } from "@/components/admin/course-form";
-import { DeleteCourseButton } from "@/components/admin/delete-course-button";
-import { DeleteIconButton } from "@/components/admin/delete-icon-button";
-import { LessonTypeFields } from "@/components/admin/lesson-type-fields";
-import { Card } from "@/components/ui/card";
+import { CourseRowActions } from "@/components/admin/course-row-actions";
+import { CourseItemActions } from "@/components/admin/course-item-actions";
+import { ModuleForm, LessonForm } from "@/components/admin/course-program-forms";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { SubmitButton } from "@/components/ui/submit-button";
+import styles from "@/styles/course-management.module.css";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  await requireAdmin();
   const { id } = await params;
   const course = await prisma.course.findUnique({ where: { id }, select: { title: true } });
   return { title: course?.title ?? "Modifica corso" };
 }
 
-export default async function EditCoursePage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function EditCoursePage({ params }: { params: Promise<{ id: string }> }) {
+  await requireAdmin();
   const { id } = await params;
-
-  const course = await prisma.course.findUnique({
-    where: { id },
-    include: {
-      modules: {
-        orderBy: { order: "asc" },
-        include: { lessons: { orderBy: { order: "asc" } } },
-      },
-    },
-  });
+  const course = await prisma.course.findUnique({ where: { id }, include: {
+    _count: { select: { enrollments: true } },
+    modules: { orderBy: [{ order: "asc" }, { createdAt: "asc" }], include: { lessons: { orderBy: [{ order: "asc" }, { createdAt: "asc" }] } } },
+  } });
   if (!course) notFound();
-
-  return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      <div className="flex items-center justify-between">
-        <Link
-          href="/admin/corsi"
-          className="inline-flex items-center gap-1 text-sm text-foreground/60 hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" /> Corsi
-        </Link>
-        {course.published && (
-          <Link
-            href={`/corsi/${course.slug}`}
-            target="_blank"
-            className="inline-flex items-center gap-1 text-sm text-brand-400 hover:underline"
-          >
-            Vedi pagina pubblica <ExternalLink className="size-3.5" />
-          </Link>
-        )}
+  const history = await prisma.enrollmentRevocation.count({ where: { courseId: id } });
+  const protectedContent = !!(course._count.enrollments || history);
+  const lessons = course.modules.flatMap(item => item.lessons), minutes = lessons.reduce((sum, item) => sum + (item.durationMin || 0), 0);
+  const issues = coursePublicationIssues(course);
+  return <div className={`${styles.workspace} mx-auto max-w-5xl space-y-6`}>
+    <Link href="/admin/corsi" className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold"><ArrowLeft size={16} aria-hidden="true" />Tutti i corsi</Link>
+    <header className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3"><Badge variant="outline" className="text-sm normal-case tracking-normal text-foreground">{course.archivedAt ? "Archiviato" : course.published ? "Pubblicato" : "Bozza"}</Badge>
+        <span className="text-sm text-foreground/80">{course.modules.length} {course.modules.length === 1 ? "modulo" : "moduli"} · {lessons.length} {lessons.length === 1 ? "lezione" : "lezioni"} · {minutes} minuti · {course._count.enrollments} {course._count.enrollments === 1 ? "iscritto" : "iscritti"}</span>
       </div>
-
-      <div>
-        <h1 className="font-serif text-2xl font-medium">{course.title}</h1>
-        <Badge variant={course.published ? "success" : "neutral"} className="mt-2">
-          {course.published ? "Pubblicato" : "Bozza"}
-        </Badge>
+      <h1 className="text-2xl font-semibold leading-8">{course.title}</h1>
+      <div className="flex flex-wrap items-center gap-2">
+        <Link href={`/admin/corsi/${id}/anteprima`} className="inline-flex min-h-11 items-center gap-2 rounded-md border border-border-strong px-3 text-sm font-semibold hover:bg-surface-muted"><Eye size={16} aria-hidden="true" />Anteprima</Link>
+        <CourseRowActions id={id} published={course.published} archived={!!course.archivedAt} title={course.title} />
       </div>
-
-      <Card className="p-6">
-        <h2 className="mb-5 font-semibold">Dettagli corso</h2>
-        <CourseForm
-          action={updateCourse.bind(null, course.id)}
-          defaultValues={{
-            title: course.title,
-            subtitle: course.subtitle,
-            description: course.description,
-            imageUrl: course.imageUrl,
-            priceCents: course.priceCents,
-            level: course.level,
-            category: course.category,
-            published: course.published,
-            featured: course.featured,
-          }}
-        />
-      </Card>
-
-      <div>
-        <h2 className="mb-4 font-semibold">Programma del corso</h2>
-
-        <div className="space-y-4">
-          {course.modules.map((module, mIndex) => (
-            <Card key={module.id} className="p-5">
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="font-medium">
-                  Modulo {mIndex + 1}: {module.title}
-                </h3>
-                <DeleteIconButton
-                  confirmMessage={`Eliminare il modulo "${module.title}" e tutte le sue lezioni?`}
-                  action={deleteModule.bind(null, course.id, module.id)}
-                />
+    </header>
+    {!course.archivedAt && <aside className="border-y border-border-subtle py-4" aria-label="Verifica pubblicazione">
+      <p className="flex items-center gap-2 font-semibold">{issues.length ? <CircleAlert size={18} aria-hidden="true" /> : <CheckCircle2 size={18} className="text-brand-400" aria-hidden="true" />}{issues.length ? "Da completare" : "Pronto per la pubblicazione"}</p>
+      {!!issues.length && <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-foreground/80">{issues.map(issue => <li key={issue}>{issue}</li>)}</ul>}
+    </aside>}
+    <nav aria-label="Sezioni del corso" className="flex flex-wrap gap-4 border-b border-border-subtle text-sm font-semibold"><a href="#dettagli" className="inline-flex min-h-11 items-center">Dettagli</a><a href="#programma" className="inline-flex min-h-11 items-center">Moduli e lezioni</a></nav>
+    <section id="dettagli" aria-labelledby="course-details" className="scroll-mt-24 border-b border-border-subtle pb-6">
+      <h2 id="course-details" className="mb-5 text-lg font-semibold">Dettagli del corso</h2>
+      <CourseForm key={course.id} action={updateCourse.bind(null, id)} defaultValues={{ title: course.title, subtitle: course.subtitle, description: course.description,
+        imageUrl: course.imageUrl, priceCents: course.priceCents, level: course.level, category: course.category, published: course.published, featured: course.featured }} />
+    </section>
+    <section id="programma" aria-labelledby="course-program" className="scroll-mt-24 space-y-5">
+      <h2 id="course-program" className="text-lg font-semibold">Moduli e lezioni</h2>
+      {!course.modules.length && <p className="border-y border-dashed border-border-strong py-6 text-foreground/80">Nessun modulo presente.</p>}
+      {course.modules.map((item, index) => <article key={item.id} className="min-w-0 rounded-lg border border-border-strong p-4 sm:p-5" aria-label={`Modulo ${item.title}`}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h3 className="min-w-0 text-lg font-semibold">{index + 1}. {item.title}</h3>
+          <CourseItemActions courseId={id} id={item.id} kind="module" title={item.title} first={index === 0} last={index === course.modules.length - 1} protectedContent={protectedContent} />
+        </div>
+        <details className="mt-2 border-b border-border-subtle pb-3"><summary className="flex gap-2 text-sm"><Pencil size={16} className="self-center" aria-hidden="true" />Modifica titolo del modulo</summary>
+          <div className="pt-3"><ModuleForm action={saveModule.bind(null, id, item.id)} id={item.id} title={item.title} editing /></div>
+        </details>
+        <ul className="divide-y divide-border-subtle">
+          {item.lessons.map((lesson, lessonIndex) => <li key={lesson.id} className="min-w-0 space-y-3 py-4" aria-label={`Lezione ${lesson.title}`}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <p className="flex items-start gap-2 font-semibold">{lesson.type === "VIDEO" ? <PlayCircle size={18} className="mt-1 shrink-0" aria-hidden="true" /> : <FileText size={18} className="mt-1 shrink-0" aria-hidden="true" />}<span>{lessonIndex + 1}. {lesson.title}</span></p>
+                <p className="mt-1 text-sm text-foreground/80">{lesson.type === "VIDEO" ? "Video" : "Testo"}{lesson.durationMin ? ` · ${lesson.durationMin} minuti` : ""}{lesson.isFreePreview ? " · Anteprima gratuita" : ""}</p>
               </div>
-
-              <ul className="mt-4 space-y-2">
-                {module.lessons.map((lesson) => (
-                  <li
-                    key={lesson.id}
-                    className="flex items-center gap-3 rounded-xl bg-surface-muted px-3 py-2.5 text-sm"
-                  >
-                    {lesson.type === "VIDEO" ? (
-                      <PlayCircle className="size-4 shrink-0 text-foreground/40" />
-                    ) : (
-                      <FileText className="size-4 shrink-0 text-foreground/40" />
-                    )}
-                    <span className="min-w-0 flex-1 truncate">{lesson.title}</span>
-                    {lesson.isFreePreview && <Badge variant="accent">Anteprima</Badge>}
-                    {lesson.durationMin && (
-                      <span className="shrink-0 text-xs text-foreground/40">
-                        {lesson.durationMin}m
-                      </span>
-                    )}
-                    <DeleteIconButton
-                      confirmMessage={`Eliminare la lezione "${lesson.title}"?`}
-                      action={deleteLesson.bind(null, course.id, lesson.id)}
-                    />
-                  </li>
-                ))}
-                {module.lessons.length === 0 && (
-                  <p className="px-3 py-2 text-sm text-foreground/40">Nessuna lezione ancora.</p>
-                )}
-              </ul>
-
-              <details className="mt-4">
-                <summary className="cursor-pointer text-sm font-medium text-brand-400">
-                  + Aggiungi lezione
-                </summary>
-                <form
-                  action={createLesson.bind(null, course.id, module.id)}
-                  className="mt-4 space-y-4 rounded-xl border border-border-subtle p-4"
-                >
-                  <div>
-                    <Label>Titolo lezione</Label>
-                    <Input name="title" required />
-                  </div>
-                  <LessonTypeFields />
-                  <div className="flex items-center gap-6">
-                    <div className="w-32">
-                      <Label>Durata (min)</Label>
-                      <Input name="durationMin" type="number" min="0" />
-                    </div>
-                    <label className="flex items-center gap-2 text-sm font-medium">
-                      <input
-                        type="checkbox"
-                        name="isFreePreview"
-                        className="size-4 rounded border-border-subtle accent-brand-600"
-                      />
-                      Anteprima gratuita
-                    </label>
-                  </div>
-                  <SubmitButton size="sm">
-                    <Plus className="size-4" /> Aggiungi lezione
-                  </SubmitButton>
-                </form>
-              </details>
-            </Card>
-          ))}
-        </div>
-
-        <Card className="mt-4 p-5">
-          <form action={createModule.bind(null, course.id)} className="flex items-end gap-3">
-            <div className="flex-1">
-              <Label>Nuovo modulo</Label>
-              <Input name="title" placeholder="es. Introduzione" required />
+              <CourseItemActions courseId={id} id={lesson.id} kind="lesson" title={lesson.title} first={lessonIndex === 0} last={lessonIndex === item.lessons.length - 1} protectedContent={protectedContent} />
             </div>
-            <SubmitButton>
-              <Plus className="size-4" /> Aggiungi
-            </SubmitButton>
-          </form>
-        </Card>
-      </div>
-
-      <Card className="border-red-900/40 p-6">
-        <h2 className="font-semibold text-red-400">Zona pericolosa</h2>
-        <p className="mt-1 text-sm text-foreground/60">
-          Eliminare il corso rimuove anche moduli, lezioni e iscrizioni collegate.
-        </p>
-        <div className="mt-4">
-          <DeleteCourseButton id={course.id} title={course.title} />
-        </div>
-      </Card>
-    </div>
-  );
+            <details><summary className="flex gap-2 text-sm"><Pencil size={16} className="self-center" aria-hidden="true" />Modifica lezione</summary>
+              <div className="border-t border-border-subtle pt-4"><LessonForm action={saveLesson.bind(null, id, item.id, lesson.id)} id={lesson.id} lesson={lesson} /></div>
+            </details>
+          </li>)}
+        </ul>
+        {!item.lessons.length && <p className="py-4 text-sm text-foreground/80">Nessuna lezione in questo modulo.</p>}
+        <details className="border-t border-border-subtle pt-2"><summary className="flex gap-2 text-sm text-brand-400"><Plus size={16} className="self-center" aria-hidden="true" />Aggiungi lezione</summary>
+          <div className="pt-3"><LessonForm action={saveLesson.bind(null, id, item.id, null)} id={`${item.id}-new`} /></div>
+        </details>
+      </article>)}
+      <div className="border-t border-border-subtle pt-5"><ModuleForm action={saveModule.bind(null, id, null)} id="new-module" /></div>
+    </section>
+  </div>;
 }

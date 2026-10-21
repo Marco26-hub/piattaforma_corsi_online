@@ -1,4 +1,5 @@
 import { FileText } from "lucide-react";
+import { normalizeLessonVideoUrl, isDirectLessonVideo } from "@/lib/lesson-media";
 
 type Lesson = {
   type: "VIDEO" | "TEXT";
@@ -7,21 +8,18 @@ type Lesson = {
   title: string;
 };
 
-const DIRECT_VIDEO_EXTENSIONS = [".mp4", ".webm", ".ogg", ".mov"];
-
 export function LessonContent({ lesson }: { lesson: Lesson }) {
-  if (lesson.type === "VIDEO" && lesson.videoUrl) {
-    const isDirectFile = DIRECT_VIDEO_EXTENSIONS.some((ext) =>
-      lesson.videoUrl!.toLowerCase().includes(ext)
-    );
+  const videoUrl = lesson.type === "VIDEO" ? normalizeLessonVideoUrl(lesson.videoUrl || "") : null;
+  if (videoUrl) {
+    const isDirectFile = isDirectLessonVideo(videoUrl);
 
     return (
       <div className="aspect-video w-full overflow-hidden rounded-2xl bg-black">
         {isDirectFile ? (
-          <video controls className="size-full" src={lesson.videoUrl} />
+          <video controls className="size-full" src={videoUrl} />
         ) : (
           <iframe
-            src={lesson.videoUrl}
+            src={videoUrl}
             title={lesson.title}
             className="size-full"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
